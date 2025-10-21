@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    tools:context=".DistributionActivity">
+
+    <!-- Título -->
+    <TextView
+        android:id="@+id/text_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Banaketa kudeatzailea"
+        android:textColor="#FFFFFF"
+        android:textSize="26sp"
+        android:fontFamily="sans-serif-medium"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="70dp"/>
+
+    <!-- Botón Volver al Menú Principal -->
+    <Button
+        android:id="@+id/btn_back"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="Itzuli"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:fontFamily="sans-serif-medium"
+        android:background="@drawable/bg_glass_card_gradient"
+        android:layout_marginTop="12dp"
+        android:elevation="6dp"
+        app:layout_constraintTop_toBottomOf="@id/text_title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginHorizontal="24dp"/>
+
+    <!-- Botón Crear Nueva Distribución -->
+    <Button
+        android:id="@+id/btn_create_distribution"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="Banaketa berri bat sortu"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:fontFamily="sans-serif-medium"
+        android:background="@drawable/bg_glass_card_gradient"
+        android:layout_marginTop="20dp"
+        android:elevation="6dp"
+        app:layout_constraintTop_toBottomOf="@id/btn_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginHorizontal="24dp"/>
+
+    <!-- Contenedor de Distribuciones -->
+    <LinearLayout
+        android:id="@+id/distributions_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:layout_marginTop="20dp"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/btn_create_distribution"
+        app:layout_constraintBottom_toTopOf="@id/assets_available_container">
+        <!-- Aquí se irán agregando las distribuciones dinámicamente -->
+    </LinearLayout>
+
+    <!-- Lista de Activos disponibles -->
+    <LinearLayout
+        android:id="@+id/assets_available_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:layout_marginTop="24dp"
+        android:layout_marginHorizontal="16dp"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/distributions_container"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+
+        <!-- RecyclerView para activos -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_assets"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:scrollbars="vertical"/>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

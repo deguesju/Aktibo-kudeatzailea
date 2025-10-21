@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Aktiboen Kudeatzailea</string>
+
+    <!-- Fuentes de fondos existentes -->
+    <string-array name="fuentes_fondos">
+        <item>Banku kontua</item>
+        <item>Krypto kontua</item>
+        <item>PayPal kontua</item>
+        <item>Inbertsio kontua</item>
+    </string-array>
+
+    <!-- Distribución (por ahora vacía) -->
+    <string-array name="distribucion_opciones">
+        <!-- oraingoz hutsik -->
+    </string-array>
+
+    <!-- 🔹 NUEVOS STRINGS AÑADIDOS -->
+    <string name="gestor_de_activos">Aktiboen Kudeatzailea</string>
+    <string name="balance_inicial">0€</string>
+    <string name="ingresar">Sartu</string>
+    <string name="distribucion">Banaketa</string>
+</resources>
