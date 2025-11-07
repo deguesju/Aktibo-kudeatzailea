@@ -2,12 +2,18 @@ package com.example.gestordeactivos
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.gestordeactivos.network.BitgetTickerData
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 
 class SelectAssetsActivity : AppCompatActivity() {
 
@@ -28,21 +34,7 @@ class SelectAssetsActivity : AppCompatActivity() {
         textSelectedCount = findViewById(R.id.text_selected_count)
         btnConfirm = findViewById(R.id.btn_confirm)
 
-        // Crear 20 activos de ejemplo
-        for (i in 1..20) {
-            assetList.add(
-                Asset(
-                    name = "Aktibo $i",
-                    symbol = "SYM$i",
-                    value = "${1000 + i * 10}€",
-                    percent = "+${(i % 10) * 1.5}%",
-                    iconColor = if (i % 3 == 0) "#FFD700" else if (i % 3 == 1) "#3C99FC" else "#FFA500",
-                    showIcon = true
-                )
-            )
-        }
-
-        // Inicializar adapter con listener de selección
+        // Inicializar adapter vacío
         adapter = AssetAdapter(assetList) { added ->
             selectedCount += if (added) 1 else -1
             textSelectedCount.text = selectedCount.toString()
@@ -51,18 +43,82 @@ class SelectAssetsActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
+        // --- Llamada a Bitget (corrutina) ---
+        lifecycleScope.launch {
+            try {
+                val api = BitgetService.create()
+
+                // símbolos válidos para spot en Bitget (usa sufijo _SPBL)
+                val pairs = listOf(
+                    "BTCUSDT_SPBL",
+                    "ETHUSDT_SPBL",
+                    "SOLUSDT_SPBL",
+                    "BNBUSDT_SPBL",
+                    "XRPUSDT_SPBL"
+                )
+
+                for (symbol in pairs) {
+                    val response = api.getMarketData(symbol)
+
+                    // log para depuración
+                    Log.d("BitgetAPI", "Respuesta raw para $symbol -> code=${response.code} msg=${response.msg} data=${response.data}")
+
+                    if (response.code == "00000" && response.data != null) {
+                        val data: BitgetTickerData = response.data
+
+                        assetList.add(
+                            Asset(
+                                name = when (symbol) {
+                                    "BTCUSDT_SPBL" -> "Bitcoin"
+                                    "ETHUSDT_SPBL" -> "Ethereum"
+                                    "SOLUSDT_SPBL" -> "Solana"
+                                    "BNBUSDT_SPBL" -> "BNB"
+                                    "XRPUSDT_SPBL" -> "Ripple"
+                                    else -> symbol
+                                },
+                                symbol = symbol,
+                                value = "${data.last} USDT",
+                                percent = data.changePercent?.let { if (it.startsWith("-")) it else "+$it" } ?: "",
+                                iconColor = "#3C99FC",
+                                showIcon = true
+                            )
+                        )
+                    } else {
+                        Log.e("BitgetAPI", "No data for $symbol -> code=${response.code} msg=${response.msg}")
+                    }
+                }
+
+                // Si no se llenó la lista, añade fallback mock para que UI no quede vacía (opcional)
+                if (assetList.isEmpty()) {
+                    Log.w("BitgetAPI", "assetList vacío: añadiendo datos de ejemplo para probar UI")
+                    assetList.addAll(
+                        listOf(
+                            Asset("Bitcoin", "BTCUSDT_SPBL", "—", "", "#FFD700", true),
+                            Asset("Ethereum", "ETHUSDT_SPBL", "—", "", "#3C99FC", true)
+                        )
+                    )
+                }
+
+                // Actualizar UI en hilo principal
+                adapter.notifyDataSetChanged()
+
+            } catch (e: IOException) {
+                Log.e("BitgetAPI", "Error de red: ${e.message}", e)
+            } catch (e: HttpException) {
+                Log.e("BitgetAPI", "Error HTTP: ${e.message}", e)
+            } catch (e: Exception) {
+                Log.e("BitgetAPI", "Excepción inesperada", e)
+            }
+        }
+
         btnConfirm.setOnClickListener {
             val selectedAssets = assetList.filter { it.isSelected }
             if (selectedAssets.isEmpty()) return@setOnClickListener
 
-            // Crear distribución sin activarla
             val distributionName = "Distribución ${DistributionStore.distributions.size + 1}"
             val newDistribution = Distribution(distributionName, selectedAssets, isActive = false)
-
-            // Guardar en memoria
             DistributionStore.distributions.add(newDistribution)
 
-            // Volver a DistributionActivity
             startActivity(Intent(this, DistributionActivity::class.java))
         }
     }
