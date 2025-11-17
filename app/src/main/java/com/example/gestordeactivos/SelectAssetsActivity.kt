@@ -6,14 +6,13 @@ import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.gestordeactivos.network.BitgetTickerData
+import com.example.gestordeactivos.network.BitgetApi
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import java.io.IOException
 
 class SelectAssetsActivity : AppCompatActivity() {
 
@@ -34,7 +33,6 @@ class SelectAssetsActivity : AppCompatActivity() {
         textSelectedCount = findViewById(R.id.text_selected_count)
         btnConfirm = findViewById(R.id.btn_confirm)
 
-        // Inicializar adapter vacío
         adapter = AssetAdapter(assetList) { added ->
             selectedCount += if (added) 1 else -1
             textSelectedCount.text = selectedCount.toString()
@@ -43,71 +41,51 @@ class SelectAssetsActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // --- Llamada a Bitget (corrutina) ---
         lifecycleScope.launch {
             try {
                 val api = BitgetService.create()
+                val response = api.getAllTickers()
 
-                // símbolos válidos para spot en Bitget (usa sufijo _SPBL)
-                val pairs = listOf(
-                    "BTCUSDT_SPBL",
-                    "ETHUSDT_SPBL",
-                    "SOLUSDT_SPBL",
-                    "BNBUSDT_SPBL",
-                    "XRPUSDT_SPBL"
-                )
+                if (response.code == "00000" && response.data != null) {
+                    val desiredSymbols = setOf("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT")
 
-                for (symbol in pairs) {
-                    val response = api.getMarketData(symbol)
+                    val filteredList = response.data.filter { it.symbol in desiredSymbols }
 
-                    // log para depuración
-                    Log.d("BitgetAPI", "Respuesta raw para $symbol -> code=${response.code} msg=${response.msg} data=${response.data}")
+                    if (filteredList.isEmpty()) {
+                        Toast.makeText(this@SelectAssetsActivity, "Could not find desired assets in API response.", Toast.LENGTH_LONG).show()
+                    }
 
-                    if (response.code == "00000" && response.data != null) {
-                        val data: BitgetTickerData = response.data
-
+                    for (tickerData in filteredList) {
                         assetList.add(
                             Asset(
-                                name = when (symbol) {
-                                    "BTCUSDT_SPBL" -> "Bitcoin"
-                                    "ETHUSDT_SPBL" -> "Ethereum"
-                                    "SOLUSDT_SPBL" -> "Solana"
-                                    "BNBUSDT_SPBL" -> "BNB"
-                                    "XRPUSDT_SPBL" -> "Ripple"
-                                    else -> symbol
+                                name = when (tickerData.symbol) {
+                                    "BTCUSDT" -> "Bitcoin"
+                                    "ETHUSDT" -> "Ethereum"
+                                    "SOLUSDT" -> "Solana"
+                                    "BNBUSDT" -> "BNB"
+                                    "XRPUSDT" -> "Ripple"
+                                    else -> tickerData.symbol
                                 },
-                                symbol = symbol,
-                                value = "${data.last} USDT",
-                                percent = data.changePercent?.let { if (it.startsWith("-")) it else "+$it" } ?: "",
+                                symbol = tickerData.symbol,
+                                value = tickerData.lastPr?.let { "$it USDT" } ?: "—",
+                                percent = tickerData.change24h?.let { if (it.startsWith("-")) it else "+$it" } ?: "",
                                 iconColor = "#3C99FC",
                                 showIcon = true
                             )
                         )
-                    } else {
-                        Log.e("BitgetAPI", "No data for $symbol -> code=${response.code} msg=${response.msg}")
                     }
+                } else {
+                    val errorMsg = "API Error: ${response.msg ?: "Unknown error"}"
+                    Log.e("BitgetAPI", "API call failed with code: ${response.code} and message: ${response.msg}")
+                    Toast.makeText(this@SelectAssetsActivity, errorMsg, Toast.LENGTH_LONG).show()
                 }
 
-                // Si no se llenó la lista, añade fallback mock para que UI no quede vacía (opcional)
-                if (assetList.isEmpty()) {
-                    Log.w("BitgetAPI", "assetList vacío: añadiendo datos de ejemplo para probar UI")
-                    assetList.addAll(
-                        listOf(
-                            Asset("Bitcoin", "BTCUSDT_SPBL", "—", "", "#FFD700", true),
-                            Asset("Ethereum", "ETHUSDT_SPBL", "—", "", "#3C99FC", true)
-                        )
-                    )
-                }
-
-                // Actualizar UI en hilo principal
-                adapter.notifyDataSetChanged()
-
-            } catch (e: IOException) {
-                Log.e("BitgetAPI", "Error de red: ${e.message}", e)
-            } catch (e: HttpException) {
-                Log.e("BitgetAPI", "Error HTTP: ${e.message}", e)
             } catch (e: Exception) {
-                Log.e("BitgetAPI", "Excepción inesperada", e)
+                val errorMsg = "Network/Parsing Error: ${e.message ?: "Unknown error"}"
+                Log.e("BitgetAPI", "An unexpected error occurred", e)
+                Toast.makeText(this@SelectAssetsActivity, errorMsg, Toast.LENGTH_LONG).show()
+            } finally {
+                adapter.notifyDataSetChanged()
             }
         }
 

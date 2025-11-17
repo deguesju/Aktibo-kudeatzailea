@@ -36,7 +36,7 @@ class AssetAdapter(
         holder.textName.text = asset.name
         holder.textSymbol.text = asset.symbol
         holder.textValue.text = asset.value
-        holder.textPercent.text = "${asset.assignedPercent}%"
+        holder.textPercent.text = asset.percent // Corregido para mostrar el cambio de la API
 
         // 🔹 Mostrar u ocultar icono según showIcon
         if (asset.showIcon) {
