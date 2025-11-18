@@ -18,7 +18,6 @@ data class BitgetResponseList<T>(
 )
 
 interface BitgetApi {
-    // Endpoint actualizado a v2 para obtener todos los tickers en una sola llamada
     @GET("api/v2/spot/market/tickers")
     suspend fun getAllTickers(): BitgetResponseList<BitgetTickerData>
 }
